@@ -1,0 +1,80 @@
+#!/usr/bin/env python3
+
+# Inspired by two things:
+# https://unix.stackexchange.com/questions/152435/sharing-your-desktop-with-google-hangouts-dual-monitor-and-gnome-shell
+# https://askubuntu.com/questions/639495/how-can-i-list-connected-monitors-with-xrandr
+
+import argparse
+import subprocess
+import re
+import sys
+
+
+def start_vlc(monitor_details):
+    _, width, height, left, top = monitor_details
+    cmd = [
+        'vlc',
+        '--no-video-deco',
+        '--no-embedded-video',
+        '--screen-fps=20',
+        '--screen-top={}'.format(top),
+        '--screen-left={}'.format(left),
+        '--screen-width={}'.format(width),
+        '--screen-height={}'.format(height),
+        'screen://',
+    ]
+    subprocess.run(cmd)
+
+
+if __name__ == '__main__':
+    monitors = {}
+    i = 0
+
+    cmd = ["""xrandr | grep ' connected '"""]
+    cmd_output = subprocess.check_output(cmd, shell=True)
+    for line in cmd_output.decode('utf-8').split('\n'):
+        parts = line.split(' ')
+
+        # skip last element which is empty
+        if len(parts) < 3:
+            continue
+
+        display_name = 'display{}'.format(i)
+        connector = parts[0]
+        # 1st element is useless text 'connected' from grep, skip
+        size_offset = parts[2]
+        if parts[2] == 'primary':
+            size_offset = parts[3]
+            display_name = 'primary'
+        i = i + 1
+        size_offset_parts = re.split('[+|x]', size_offset)
+        monitors[display_name] = (connector,
+                                  size_offset_parts[0],  # width
+                                  size_offset_parts[1],  # height
+                                  size_offset_parts[2],  # left
+                                  size_offset_parts[3],  # top
+                                  )
+
+    parser = argparse.ArgumentParser(
+        description='Starts one display in a VLC capture session. Share that VLC window on a google hangout and work around their inability to screenshare a single display during a Google Meet')
+    for monitor, details in monitors.items():
+        connector, width, height, _, _ = details
+        parser.add_argument('--{}'.format(monitor), dest=monitor, action='store_true',
+                            help='{}x{} connected on {}'.format(width, height, connector))
+    args = parser.parse_args()
+
+    # validate
+    if sum([1 for _, value in args._get_kwargs() if value is True]) == 0:
+        print('You didnt specify a valid monitor, specify one of ""')
+        sys.exit(1)
+    if sum([1 for _, value in args._get_kwargs() if value is True]) > 1:
+        print('specified too many, do one')
+        sys.exit(1)
+
+    for arg, value in args._get_kwargs():
+        if value:
+            print(
+                'Starting VLC in capture mode for {} - share this on Google Meet and DO NOT RESIZE IT'.format(arg))
+            lolwat = monitors[arg]
+            print(lolwat)
+            start_vlc(lolwat)
