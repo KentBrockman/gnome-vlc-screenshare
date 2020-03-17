@@ -64,11 +64,13 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # validate
+    valid_args = ' or '.join(['--{}'.format(arg)
+                              for arg, _ in args._get_kwargs()])
     if sum([1 for _, value in args._get_kwargs() if value is True]) == 0:
-        print('You didnt specify a valid monitor, specify one of ""')
+        print('You didnt specify a valid monitor, specify one of {}'.format(valid_args))
         sys.exit(1)
     if sum([1 for _, value in args._get_kwargs() if value is True]) > 1:
-        print('specified too many, do one')
+        print('You specified too many displays, specify one of {}'.format(valid_args))
         sys.exit(1)
 
     for arg, value in args._get_kwargs():
