@@ -48,11 +48,12 @@ if __name__ == '__main__':
             display_name = 'primary'
         i = i + 1
         size_offset_parts = re.split('[+|x]', size_offset)
-        monitors[display_name] = (connector,
-                                  size_offset_parts[0],  # width
-                                  size_offset_parts[1],  # height
-                                  size_offset_parts[2],  # left
-                                  size_offset_parts[3],  # top
+        if len(size_offset_parts) >= 4:
+            monitors[display_name] = (connector,
+                                      size_offset_parts[0],  # width
+                                      size_offset_parts[1],  # height
+                                      size_offset_parts[2],  # left
+                                      size_offset_parts[3],  # top
                                   )
 
     parser = argparse.ArgumentParser(
